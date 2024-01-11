@@ -56,7 +56,7 @@ requested_time = ''
 time_min = ''
 time_max = ''
 time_jitter = ''
-
+counter_jitter_high = ''
 
 
 #Create variables for TPR:
@@ -140,7 +140,48 @@ class CircularBuffer:
 #Time manipulation functions: Getting current time & jitter from SR620, taking in requested user time, moving TPR or TEM to change time, checking again, etc.
 #############################################################################################################################################################
 
+#new version
+############
+#Class for handling the SR620 Time Interval Counter
+#Reads the time and time jitter data
+#There's a 1e9 scale factor in here before outputting the time
 
+class time_interval_counter: 
+    
+    def __init__(self):
+        #create circular buffers for adding time & jitter meaurements from SR620
+        self.time_buffer = CircularBuffer(11) #create buffer of size 11 for time
+        self.jitter_buffer = CircularBuffer(11) #create buffer of size 11 for jitter
+        self.time_buffer.enqueue(self.get('current_time')) #add first element to buffer for time
+        self.time_buffer.enqueue(self.get('time_jitter')) #add first element to buffer for jitter
+        
+        #scale factor might be needed
+        self.scale = 1e9
+    
+    def get_time(self):
+        #Get all our time & jitter variables set up
+        jit_high = self.get('counter_jitter_high')
+        jit = self.get('time_jitter')
+        time = self.get('current_time')
+        time_high = self.get('time_max')
+        time_low = self.get('time_min')
+        
+        #Do some logic checks
+        if time == self.time_buffer.peek():
+            print('No new time data to add')
+            return None
+        if time > time_high or time < time_low:
+            print('Time data out of range')
+            return None
+        if jit > jit_high:
+            print('Jitter is too high')
+            return None
+        
+        #Start adding elements now
+        self.time_buffer.enqueue(time)
+        self.jitter_buffer.enqueue(jit)
+        
+        return time*self.scale
 
 
 
