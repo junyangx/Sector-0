@@ -3,9 +3,11 @@
 #Needs access to move the TEM QIOffset & ScanOffset to apply I/Q modulation on the TEM system, and also move TPR Trigfgers to delay the Carbide pulses
 #TEM adjusts are for fine timing control, with the I/Q modulation allowing for ~1ps resolution steps
 #TPR Trigger delays will be used for coarse timing and, eventually, bucket jump correction
-
+##############################################################################################################################################################################
 
 #Import all the libraries needed here
+#####################################
+
 import time
 import math
 import random
@@ -48,6 +50,9 @@ LockedB = ''
 
 #Create variables for SR620 PVs we need:
 ########################################
+
+current_time = ''
+requested_time = ''
 time_min = ''
 time_max = ''
 time_jitter = ''
@@ -56,6 +61,7 @@ time_jitter = ''
 
 #Create variables for TPR:
 ##########################
+
 TPR_1 = ''
 TPR_2 = ''
 TPR_3 = ''
@@ -63,6 +69,7 @@ TPR_3 = ''
 
 #Need to add functions to pull and write to various PVs:
 ########################################################
+
 def get(name): #Pulls current value of PV and updates current variable to match
     try:
         name.get(ctrl=True, timeout=10.0)
@@ -88,6 +95,7 @@ def read(name): #simple function to read the current value of a PV without updat
 
 #Need buffer for reading data from SR620: (need to declare buffer size later in code)
 #########################################
+
 class CircularBuffer:
     def __init__(self, size):
         self.size = size
@@ -127,7 +135,12 @@ class CircularBuffer:
         return self.buffer[self.head]
 
 
-	
+
+
+#Time manipulation functions: Getting current time & jitter from SR620, taking in requested user time, moving TPR or TEM to change time, checking again, etc.
+#############################################################################################################################################################
+
+
 
 
 
