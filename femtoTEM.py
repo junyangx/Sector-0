@@ -61,6 +61,31 @@ TPR_2 = ''
 TPR_3 = ''
 
 
+#Need to add functions to pull and write to various PVs:
+########################################################
+def get(name): #Pulls current value of PV and updates current variable to match
+    try:
+        name.get(ctrl=True, timeout=10.0)
+        return name.value
+    except:
+        print(f'Unable to read PV: {name}')
+        return None
+
+def put(name,val): #Takes current value of variable and writes it to the PV
+    try:
+        name.put(val, timeout=10.0)
+        print (f'Wrote value {val} to PV: {name}.')
+    except:
+        print (f'Unable to write value {val} to PV: {name}.')
+
+def read(name): #simple function to read the current value of a PV without updating variable in script
+    try:
+        return name.value
+    except:
+        print(f'Unable to read PV: {name}')
+        return None
+
+
 #Need buffer for reading data from SR620: (need to declare buffer size later in code)
 #########################################
 class CircularBuffer:
