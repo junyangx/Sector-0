@@ -140,11 +140,10 @@ class CircularBuffer:
 #Time manipulation functions: Getting current time & jitter from SR620, taking in requested user time, moving TPR or TEM to change time, checking again, etc.
 #############################################################################################################################################################
 
-#new version
-############
 #Class for handling the SR620 Time Interval Counter
 #Reads the time and time jitter data
 #There's a 1e9 scale factor in here before outputting the time
+###############################################################
 
 class time_interval_counter: 
     
@@ -184,6 +183,8 @@ class time_interval_counter:
         return time*self.scale
 
 
+
+#For taking in User requested time, figuring out the delta_time and moving TPR or TEM accordingly
 
 
 
