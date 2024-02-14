@@ -71,7 +71,7 @@ TPR_3 = ''
 
 def get(name): #Pulls current value of PV and updates current variable to match
     try:
-        name.get(ctrl=True, timeout=10.0)
+        name.caget(ctrl=True, timeout=10.0)
         return name.value
     except:
         print(f'Unable to read PV: {name}')
@@ -79,7 +79,7 @@ def get(name): #Pulls current value of PV and updates current variable to match
 
 def put(name,val): #Takes current value of variable and writes it to the PV
     try:
-        name.put(val, timeout=10.0)
+        name.caput(val, timeout=10.0)
         print (f'Wrote value {val} to PV: {name}.')
     except:
         print (f'Unable to write value {val} to PV: {name}.')
@@ -150,19 +150,19 @@ class time_interval_counter:
         #create circular buffers for adding time & jitter meaurements from SR620
         self.time_buffer = CircularBuffer(11) #create buffer of size 11 for time
         self.jitter_buffer = CircularBuffer(11) #create buffer of size 11 for jitter
-        self.time_buffer.enqueue(self.get('current_time')) #add first element to buffer for time
-        self.time_buffer.enqueue(self.get('time_jitter')) #add first element to buffer for jitter
+        self.time_buffer.enqueue(self.caget('current_time')) #add first element to buffer for time
+        self.time_buffer.enqueue(self.caget('time_jitter')) #add first element to buffer for jitter
         
         #scale factor might be needed
         self.scale = 1e9
     
     def get_time(self):
         #Get all our time & jitter variables set up
-        jit_high = self.get('counter_jitter_high')
-        jit = self.get('time_jitter')
-        time = self.get('current_time')
-        time_high = self.get('time_max')
-        time_low = self.get('time_min')
+        jit_high = self.caget('counter_jitter_high')
+        jit = self.caget('time_jitter')
+        time = self.caget('current_time')
+        time_high = self.caget('time_max')
+        time_low = self.caget('time_min')
         
         #Do some logic checks
         if time == self.time_buffer.peek():
@@ -186,190 +186,7 @@ class time_interval_counter:
 #For taking in User requested time, figuring out the delta_time and moving TPR or TEM accordingly
 
 
-class Locker:
-    def __init__(self):
-        self.counter_time = 1000
-        self.TPR_delay = 500
-        self.ScanOffset = 0
-        self.QIOffset = 180000
 
-    def set_time(self,time):
-        t = float(time)
-        print(f'Time entered: {t}')
-        delta_t = t - self.counter_time
-        print(f'time difference is: {delta_t}\n')
-        delay = self.TPR_delay
-        offset = self.ScanOffset
-        QI = self.QIOffset
-        
-        if delta_t > 0:
-            while delta_t > 0.001:
-                if delta_t >= 15.38:
-                    print('**in TPR delay loop**\n')
-                   
-                    delay += 15.38
-                    delta_t -= 15.38
-                    
-                    print(f'new TPR delay: {delay}')
-                    print(f'new time offset: {delta_t}\n')
-
-                elif delta_t < 15.38 and delta_t > 0.005:
-                    print('**in ScanOffset loop**\n')
-                    
-                    offset += 0.005
-                    delta_t -= 0.005
-                    
-                    print(f'new ScanOffset: {offset}')
-                    print(f'new time offset: {delta_t}\n')
-
-                elif delta_t <= 0.005 and delta_t >= -0.005:
-                    print('**In QIOffset loop**\n')
-                    #resolution in fs/step
-                    step_res_fs = 5.87
-                    #step resolution in mdeg/step
-                    step_res_mdeg = 5.49
-
-                    #CONVERSIONS
-
-                    #convert to fs
-                    delta_t_fs = delta_t*1e6
-                    print(f'Current delta_t: {delta_t}\n')
-                    print(f'Current delta_t_fs: {delta_t_fs}')
-                    #convert to steps
-                    steps = delta_t_fs / step_res_fs
-                    print(f'Number of steps needed: {steps}')
-                    #phase error conversion (UNITS OF MDEG)
-                    phase_err = (steps*step_res_mdeg)
-                    print(f'Total phase error in mdeg: {phase_err}\n')
-
-                    #logic check to make sure we're not at the edge of QIOffset range
-                    #QIOffset goes from 0 to 360000 mdeg
-
-                    QIOffset_check = QI + phase_err
-                    print(f'QIOffset check value: {QIOffset_check}\n')
-
-                    if QIOffset_check > 360000:
-                        print('QIOffset too high')
-                        QI_delta = QIOffset_check - 360000
-                        QI_delta_steps = QI_delta/step_res_mdeg
-                        QI_delta_fs = QI_delta_steps*step_res_fs
-
-                        offset += QI_delta_fs
-                        delta_t -= QI_delta_fs
-                        
-                        print(f'new ScanOffset: {offset}')
-                        print(f'new time offset: {delta_t}\n')
-
-                    elif QIOffset_check < 0:
-                        print('QIOffset too low')
-                        QI_delta = 0 + QIOffset_check
-                        QI_delta_steps = QI_delta/step_res_mdeg
-                        QI_delta_fs = QI_delta_steps*step_res_fs
-
-                        offset += QI_delta_fs
-                        delta_t += QI_delta_fs
-                        
-                        print(f'new ScanOffset: {offset}')
-                        print(f'new time offset: {delta_t}\n')
-
-                    elif QIOffset_check <= 360000 and QIOffset_check >= 0:
-                        print('QIOffset in range')
-                        QI = QIOffset_check
-                        delta_t = 0
-                        
-                        print(f'new QIOffset: {QI}')
-                        print(f'new time offset: {delta_t}\n')
-                
-                elif delta_t <= 0.001 and delat_t >= -0.001:
-                    return
-
-            print('Done')
-            return delta_t  
-
-        elif delta_t < 0:
-            while delta_t < -0.001:
-                if delta_t <= -15.38:
-                    print('**in TPR delay loop**')
-                   
-                    delay -= 15.38
-                    delta_t += 15.38
-                    
-                    print(f'new TPR delay: {delay}')
-                    print(f'new time offset: {delta_t}\n')
-                
-                elif delta_t > -15.38 and delta_t < -0.005:
-                    print('**in ScanOffset loop**\n')
-                    
-                    offset -= 0.005
-                    delta_t += 0.005
-                    
-                    print(f'new ScanOffset: {offset}')
-                    print(f'new time offset: {delta_t}\n')
-                
-                elif delta_t >= -0.005 and delta_t <= 0.005:
-                    print('**In QIOffset loop**\n')
-                    #resolution in fs/step
-                    step_res_fs = 5.87
-                    #step resolution in mdeg/step
-                    step_res_mdeg = 5.49
-
-                    #CONVERSIONS
-
-                    #convert to fs
-                    delta_t_fs = delta_t*1e6
-                    print(f'Current delta_t: {delta_t}\n')
-                    print(f'Current delta_t_fs: {delta_t_fs}')
-                    #convert to steps
-                    steps = delta_t_fs / step_res_fs
-                    print(f'Number of steps needed: {steps}')
-                    #phase error conversion (UNITS OF MDEG)
-                    phase_err = (steps*step_res_mdeg)
-                    print(f'Total phase error in mdeg: {phase_err}\n')
-
-                    #logic check to make sure we're not at the edge of QIOffset range
-                    #QIOffset goes from 0 to 360000 mdeg
-
-                    QIOffset_check = QI + phase_err
-                    print(f'QIOffset check value: {QIOffset_check}\n')
-
-                    if QIOffset_check > 360000:
-                        print('QIOffset too high')
-                        QI_delta = QIOffset_check - 360000
-                        QI_delta_steps = QI_delta/step_res_mdeg
-                        QI_delta_fs = QI_delta_steps*step_res_fs
-
-                        offset += QI_delta_fs
-                        delta_t -= QI_delta_fs
-                        
-                        print(f'new ScanOffset: {offset}')
-                        print(f'new time offset: {delta_t}\n')
-
-                    elif QIOffset_check < 0:
-                        print('QIOffset too low')
-                        QI_delta = 0 + QIOffset_check
-                        QI_delta_steps = QI_delta/step_res_mdeg
-                        QI_delta_fs = QI_delta_steps*step_res_fs
-
-                        offset += (QI_delta_fs/1e6)
-                        delta_t += (QI_delta_fs/1e6)
-                        
-                        print(f'new ScanOffset: {offset}')
-                        print(f'new time offset: {delta_t}\n')
-
-                    elif QIOffset_check <= 360000 and QIOffset_check >= 0:
-                        print('QIOffset in range')
-                        QI = QIOffset_check
-                        delta_t = 0
-                        
-                        print(f'new QIOffset: {QI}')
-                        print(f'new time offset: {delta_t}\n')
-                
-                elif delta_t <= 0.001 and delat_t >= -0.001:
-                    return
-
-
-            print('Done')
-            return delta_t
 
 
 
