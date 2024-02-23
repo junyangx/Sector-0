@@ -14,7 +14,7 @@ import random
 import sys
 import watchdog
 from pylab import *
-import pyepics
+import epics
 
 
 
@@ -71,22 +71,22 @@ TPR_3 = ''
 
 def get(name): #Pulls current value of PV and updates current variable to match
     try:
-        name.caget(ctrl=True, timeout=10.0)
-        return name.value
+        epics.caget(name,timeout=10.0)
+        
     except:
         print(f'Unable to read PV: {name}')
         return None
 
 def put(name,val): #Takes current value of variable and writes it to the PV
     try:
-        name.caput(val, timeout=10.0)
+        epics.caput(name,val, timeout=10.0)
         print (f'Wrote value {val} to PV: {name}.')
     except:
         print (f'Unable to write value {val} to PV: {name}.')
 
 def read(name): #simple function to read the current value of a PV without updating variable in script
     try:
-        return name.value
+        epics.cainfo(name)
     except:
         print(f'Unable to read PV: {name}')
         return None
